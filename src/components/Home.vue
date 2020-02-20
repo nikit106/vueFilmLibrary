@@ -24,6 +24,7 @@
           label(
             for="radioFilm"
           ) Film
+        .option-list
           input.what-watch--radio(
             type="radio"
             id="radioSerial"
@@ -92,24 +93,26 @@
           .button.button-default(
             @click="newTag"
           ) Send
-
-
-
         .tag-list
-          .ui-tag__wrapper(
-            v-for="tag in tags"
-            :key="tag.title"
+          transition-group(
+            enter-active-class="animated fadeInRight"
+            leave-active-class="animated fadeOutDown"
           )
-            .ui-tag(
-              @click="addTagUsed(tag)"
-              :class="{active: tag.use}"
+            .ui-tag__wrapper(
+              v-for="tag in tags"
+              :key="tag.title"
             )
-              span.tag-title {{ tag.title }}
-              span.button-close
-        p {{tagsUsed}}
+              .ui-tag(
+                @click="addTagUsed(tag)"
+                :class="{used: tag.use}"
+              )
+                span.tag-title {{ tag.title }}
+                span.button-close(@click="deleteTag(tag.id)")
+
         .button-list
           .button.button--round.button-primary(
             @click="newTask"
+            :disabled="submitStatus==='PENDING'"
           ) Send
 
 </template>
@@ -118,85 +121,81 @@
 export default {
   data () {
     return {
+      submitStatus: null,
       taskTitle: '',
       taskDescription: '',
       whatWatch: 'Film',
-      taskId: 3,
       filmHours: 1,
       filmMinutes: 30,
       serialSeason: 1,
       serialSeries: 11,
       serialSeriesMinutes: 40,
-
-      tagTitle: "",
+      tagTitle: '',
       tagMenuShow: false,
-      tagsUsed: [],
-      tags: [
-        {
-          title: 'Comedy',
-          use: false
-        },
-        {
-          title: 'Westerns',
-          use: false
-        },
-        {
-          title: 'Adventure',
-          use: false
-        },
-        {
-          title: 'Drama',
-          use: false
-        },
-      ]
+      tagsUsed: []
     }
   },
+
   methods: {
-    newTag() {
+    newTag () {
       if (this.tagTitle === '') {
         return
       }
-      this.tags.push ({
+      const tag = {
         title: this.tagTitle,
-        used: false
-      })
+        use: false
+      }
+      this.$store.dispatch('newTag', tag)
+    },
+    deleteTag (id) {
+      this.$store.dispatch('delete', id)
+        .then(() => {
+          this.$store.dispatch('loadTags')
+        })
     },
     newTask () {
       if (this.taskTitle === '') {
         return
       }
-      /*
-      const tag = {
-        tag: this.tagTitle
-      }
-      */
       let time
-      if(this.whatWatch === 'Film') {
-        time = this.FilmTime
+      if (this.whatWatch === 'Film') {
+        time = this.filmTime
       } else {
         time = this.serialTime
       }
       const task = {
-        id: this.taskId,
         title: this.taskTitle,
-        decription: this.taskDescription,
+        description: this.taskDescription,
         whatWatch: this.whatWatch,
         time,
-        tagsUsed: this.tagsUsed,
-        comleted: false,
+        tags: this.tagsUsed,
+        completed: false,
         editing: false
       }
-      this.taskId += 1
-      this.tasktitle += ''
+      this.$store.dispatch('newTask', task)
+      this.taskTitle = ''
       this.taskDescription = ''
       this.tagsUsed = []
+      this.serialSeason = 1
+      this.serialSeries = 11
+      this.serialSeriesMinutes = 40
+
+      for (let i = 0; i < this.tags.length; i++) {
+        this.tags[i].use = false
+      }
     },
-    addTagUsed(tag) {
+    delete (id) {
+      this.$store.dispatch('deleteTag', id)
+        .then(() => {
+          this.$store.dispatch('loadTags')
+        })
+    },
+    addTagUsed (tag) {
       tag.use = !tag.use
-      if(tag.use) {
-        this.tagsUsed.push(
-          tag.title
-        )
+      if (tag.use) {
+        this.tagsUsed.push({
+          title: tag.title
+        })
       } else {
         this.tagsUsed.splice(tag.title, 1)
       }
@@ -204,16 +203,21 @@ export default {
     getHoursAndMinutes (minutes) {
       let hours = Math.trunc(minutes / 60)
       let min = minutes % 60
+      console.log(hours + ' Hours ' + min + ' Minutes')
       return hours + ' Hours ' + min + ' Minutes'
     }
   },
   computed: {
+    tags () {
+      return this.$store.getters.tags
+    },
     filmTime () {
       let min = (this.filmHours * 60) + (this.filmMinutes * 1)
       return this.getHoursAndMinutes(min)
     },
     serialTime () {
       let min = this.serialSeason * this.serialSeries * this.serialSeriesMinutes
+      console.log(min)
       return this.getHoursAndMinutes(min)
     }
   }
@@ -224,13 +228,12 @@ export default {
 .option-list
   display flex
   .what-watch--radio
-    margin-right 12px
+    margin-right 6px
+    margin-top: 7px
   .label
     margin-right 20px
     &:last-child
       margin-bottom: 0
-
-
 tag-list
   margin-bottom 20px
 
@@ -256,6 +259,7 @@ tag-list
   display flex
   justify-content space-between
   align-items center
+  margin-bottom: 10px
 
 .tag-add--input
   margin-bottom 0
@@ -274,7 +278,5 @@ tag-list
 .button-list
   display flex
   justify-content flex-end
-
-
 
 </style>

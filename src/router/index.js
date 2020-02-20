@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
+import store from '../store'
 import Home from '@/components/Home'
 import Task from '@/components/Task'
 import Login from '@/components/Auth/Login'
@@ -13,24 +14,30 @@ export default new Router({
   mode: 'history',
   routes: [
     {
-      path :'/',
+      path: '/',
       name: 'home',
-      component: Home
+      component: Home,
+      beforeEnter (to, from, next) {
+        store.getters.checkUser ? next() : next('/login')
+      }
     },
     {
-      path :'/login',
+      path: '/login',
       name: 'login',
       component: Login
     },
     {
-      path :'/registration',
+      path: '/registration',
       name: 'registration',
       component: Registration
     },
     {
-      path :'/task',
+      path: '/task',
       name: 'task',
-      component: Task
+      component: Task,
+      beforeEnter (to, from, next) {
+        store.getters.checkUser ? next() : next('/login')
+      }
     }
   ]
 })

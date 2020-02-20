@@ -27,9 +27,11 @@
                   router-link.navbar-link(
                     :to="`${link.url}`"
                   ) {{link.title}}
-
-
-
+                li.navbar-item(
+                  v-if="checkUser"
+                  @click="logout"
+                )
+                  span.navbar-link Logout
     router-view
 </template>
 
@@ -37,12 +39,29 @@
 export default {
   data () {
     return {
-      menuShow: false,
-      linkMenu: [
-        {title: 'Home', url: '/'},
+      menuShow: false
+    }
+  },
+  methods: {
+    logout () {
+      this.$store.dispatch('logoutUser')
+      this.$router.push('/login')
+    }
+  },
+  computed: {
+    checkUser () {
+      return this.$store.getters.checkUser
+    },
+    linkMenu () {
+      if (this.checkUser) {
+        return [
+          {title: 'Home', url: '/'},
+          {title: 'Tasks', url: '/Task'}
+        ]
+      }
+      return [
         {title: 'Login', url: '/login'},
-        {title: 'Registration', url: '/registration'},
-        {title: 'Tasks', url: '/Task'}
+        {title: 'Registration', url: '/registration'}
       ]
     }
   }
